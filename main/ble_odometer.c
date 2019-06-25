@@ -48,6 +48,7 @@ static const uint16_t spp_service_uuid = 0xABF0;
 
 #define CHAR_DECLARATION_SIZE   (sizeof(uint8_t))
 
+/*********************************************************************************/
 static bool enable_data_ntf = false;
 static bool is_connected = false;
 static esp_bd_addr_t spp_remote_bda = {0x0,};
@@ -63,14 +64,20 @@ static esp_ble_adv_params_t spp_adv_params = {
     .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-static QueueHandle_t gpio_queue = NULL;
-static QueueHandle_t cmd_cmd_queue = NULL;
+static xQueueHandle gpio_queue = NULL;
+
 
 static const uint8_t spp_adv_data[23] = {
     0x02,0x01,0x06,
     0x03,0x03,0xF0,0xAB,
     0x0F,0x09,0x45,0x53,0x50,0x5f,0x53,0x50,0x50,0x5f,0x53,0x45,0x52,0x56,0x45,0x52
 };
+
+static uint16_t spp_mtu_size = 23;
+static uint16_t spp_conn_id = 0xffff;
+static esp_gatt_if_t spp_gatts_if = 0xff;
+QueueHandle_t spp_uart_queue = NULL;
+static xQueueHandle cmd_cmd_queue = NULL;
 
 struct gatts_profile_inst {
     esp_gatts_cb_t gatts_cb;
@@ -267,6 +274,7 @@ static void free_write_buffer(void)
     SppRecvDataBuff.first_node = NULL;
 }
 
+//  TODO: fix this
 // static void print_write_buffer(void)
 // {
 //     temp_spp_recv_data_node_p1 = SppRecvDataBuff.first_node;
@@ -372,8 +380,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 #ifdef SPP_DEBUG_MODE
                     esp_log_buffer_char(GATTS_TABLE_TAG,(char *)(p_data->write.value),p_data->write.len);
 #else
-                    // uart_write_bytes(UART_NUM_0, (char *)(p_data->write.value), p_data->write.len);
-                    printf("Jebenica");
+                    uart_write_bytes(UART_NUM_0, (char *)(p_data->write.value), p_data->write.len);
+                    // printf("Jebenica");
                     // printf((char *)(p_data->write.value), p_data->write.len)
 #endif
                 }else{
@@ -388,7 +396,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     	case ESP_GATTS_EXEC_WRITE_EVT:{
     	    ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_EXEC_WRITE_EVT\n");
     	    if(p_data->exec_write.exec_write_flag){
-    	        print_write_buffer();
+    	        // print_write_buffer();
+                printf("Jebenica2");
     	        free_write_buffer();
     	    }
     	    break;
@@ -498,10 +507,6 @@ void app_main()
         .pull_up_en = 1
     };
 
-    gpio_config(&io_conf);    
-    gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_INPUT, gpio_isr_handler, (void*) GPIO_INPUT);
-
     // Initialize NVS
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -541,6 +546,12 @@ void app_main()
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_SPP_APP_ID);
 
-    gpio_queue = xQueueCreate(1, sizeof(uint32_t));
+    gpio_config(&io_conf);    
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_INPUT, gpio_isr_handler, (void*) GPIO_INPUT);
+
+    gpio_queue = xQueueCreate(10, sizeof(uint32_t));
     xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
+
+    spp_task_init();
 }
