@@ -65,7 +65,9 @@ static esp_ble_adv_params_t spp_adv_params = {
 };
 
 static xQueueHandle gpio_queue = NULL;
-
+// For debouncing
+static uint32_t last_time;
+static const uint16_t debounce_time = 80;
 
 static const uint8_t spp_adv_data[23] = {
     0x02,0x01,0x06,
@@ -455,10 +457,16 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     }
 }
 
-static void IRAM_ATTR gpio_isr_handler(void *arg)
-{
+static void IRAM_ATTR gpio_isr_handler(void *arg){
     uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(gpio_queue, &gpio_num, NULL);
+
+    uint32_t cur_time = esp_log_timestamp();
+
+    if ((cur_time - last_time) > debounce_time){
+        xQueueSendFromISR(gpio_queue, &gpio_num, NULL);
+    }
+
+    last_time = cur_time;  
 }
 
 static void gpio_task(void *arg){
@@ -466,15 +474,14 @@ static void gpio_task(void *arg){
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
-            uint8_t *temp = (uint8_t *)"jebenica\n";
+            uint8_t *temp = (uint8_t *)"step\n";
             printf("%s\n", temp);
             esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen((char*)temp), temp, false);
         }
     }
 }
 
-void spp_cmd_task(void * arg)
-{
+void spp_cmd_task(void * arg){
     uint8_t * cmd_id;
 
     for(;;){
