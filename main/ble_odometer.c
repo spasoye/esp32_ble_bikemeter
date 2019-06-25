@@ -380,8 +380,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 #ifdef SPP_DEBUG_MODE
                     esp_log_buffer_char(GATTS_TABLE_TAG,(char *)(p_data->write.value),p_data->write.len);
 #else
-                    uart_write_bytes(UART_NUM_0, (char *)(p_data->write.value), p_data->write.len);
-                    // printf("Jebenica");
+                    // uart_write_bytes(UART_NUM_0, (char *)(p_data->write.value), p_data->write.len);
+                    esp_log_buffer_char(GATTS_TABLE_TAG,(char *)(p_data->write.value),p_data->write.len);
                     // printf((char *)(p_data->write.value), p_data->write.len)
 #endif
                 }else{
@@ -466,7 +466,9 @@ static void gpio_task(void *arg){
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
-            printf("Jebeno\n");
+            uint8_t *temp = (uint8_t *)"jebenica\n";
+            printf("%s\n", temp);
+            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen((char*)temp), temp, false);
         }
     }
 }
@@ -550,7 +552,7 @@ void app_main()
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_INPUT, gpio_isr_handler, (void*) GPIO_INPUT);
 
-    gpio_queue = xQueueCreate(10, sizeof(uint32_t));
+    gpio_queue = xQueueCreate(1, sizeof(uint32_t));
     xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
 
     spp_task_init();
