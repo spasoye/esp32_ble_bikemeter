@@ -68,6 +68,7 @@ static xQueueHandle gpio_queue = NULL;
 // For debouncing
 static uint32_t last_time;
 static const uint16_t debounce_time = 80;
+static uint32_t delta;
 
 static const uint8_t spp_adv_data[23] = {
     0x02,0x01,0x06,
@@ -458,12 +459,11 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 }
 
 static void IRAM_ATTR gpio_isr_handler(void *arg){
-    uint32_t gpio_num = (uint32_t) arg;
-
     uint32_t cur_time = esp_log_timestamp();
 
     if ((cur_time - last_time) > debounce_time){
-        xQueueSendFromISR(gpio_queue, &gpio_num, NULL);
+        delta = cur_time - last_time;
+        xQueueSendFromISR(gpio_queue, &delta, NULL);
     }
 
     last_time = cur_time;  
@@ -471,12 +471,23 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 static void gpio_task(void *arg){
     uint32_t gpio_num;
+    uint8_t buffer[4];
+    char str_buffer[10] = {0};
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
             uint8_t *temp = (uint8_t *)"step\n";
             printf("%s\n", temp);
-            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen((char*)temp), temp, false);
+            
+            buffer[0] = (delta >> 24) & 0xFF;
+            buffer[1] = (delta >> 16) & 0xFF;
+            buffer[2] = (delta >> 8) & 0xFF;
+            buffer[3] = delta & 0xFF;
+
+            snprintf(str_buffer, 10, "%d\n", delta);
+            printf("Delta time: %s\n", str_buffer);
+
+            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen(str_buffer), (uint8_t*)str_buffer, false);
         }
     }
 }
