@@ -48,6 +48,8 @@ static const uint16_t spp_service_uuid = 0xABF0;
 #define GPIO_INPUT  4
 
 #define CHAR_DECLARATION_SIZE   (sizeof(uint8_t))
+/*********************************************************************************/
+void timer_func(void);
 
 /*********************************************************************************/
 static bool enable_data_ntf = false;
@@ -66,15 +68,16 @@ static esp_ble_adv_params_t spp_adv_params = {
 };
 
 // Timer
-#define TIMER_SCALE     (TIMER_BASE_CLK / timer_divider)
 static const uint32_t timer_divider = 16;
+#define TIMER_SCALE     (TIMER_BASE_CLK / timer_divider)
 static const timer_idx_t timer_idx = TIMER_0;
+static const timer_group_t timer_group  = TIMER_GROUP_1;
 
 // gpio
 static xQueueHandle gpio_queue = NULL;
 // For debouncing
 static uint32_t last_time;
-static const uint16_t debounce_time = 80;
+static const uint16_t debounce_time = 100;
 static uint32_t delta;
 
 static const uint8_t spp_adv_data[23] = {
@@ -479,22 +482,44 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 static void gpio_task(void *arg){
     uint32_t gpio_num;
     uint8_t buffer[4];
-    char str_buffer[10] = {0};
+    static uint64_t tim_cntr = 0;
+    char str_buffer[15] = {0};
+
+    // GPIO stuff ------> move this to module
+    gpio_config_t io_conf = {
+        //interrupt of rising edge
+        .intr_type = GPIO_PIN_INTR_NEGEDGE,
+        .pin_bit_mask = (1ULL << GPIO_INPUT),
+        //set as input mode    
+        .mode = GPIO_MODE_INPUT,
+        //enable pull-up mode
+        .pull_up_en = 1
+    };
+
+    gpio_config(&io_conf);    
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(GPIO_INPUT, gpio_isr_handler, (void*) GPIO_INPUT);
+
+    timer_func();
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
-            uint8_t *temp = (uint8_t *)"step\n";
-            printf("%s\n", temp);
+            uint64_t curr_cntr;
             
-            buffer[0] = (delta >> 24) & 0xFF;
-            buffer[1] = (delta >> 16) & 0xFF;
-            buffer[2] = (delta >> 8) & 0xFF;
-            buffer[3] = delta & 0xFF;
+            // TODO: timer_group to const.
+            timer_get_counter_value(timer_group, timer_idx, &curr_cntr);
 
-            snprintf(str_buffer, 10, "%d\n", delta);
-            printf("Delta time: %s\n", str_buffer);
+
+
+            snprintf(str_buffer, 15, "%.8f\n", (double)(curr_cntr - tim_cntr) / TIMER_SCALE);
+            printf("Period: %s\n", str_buffer);
+
+            // TODO: t1 to const
+            TIMERG0.int_clr_timers.t1 = 1;
 
             esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen(str_buffer), (uint8_t*)str_buffer, false);
+            
+            tim_cntr = curr_cntr;
         }
     }
 }
@@ -529,16 +554,16 @@ void timer_func(void){
     config.intr_type = TIMER_INTR_LEVEL;
     config.auto_reload = 0;
     
-    timer_init(TIMER_GROUP_0, timer_idx, &config);
+    timer_init(timer_group, timer_idx, &config);
 
     /* Timer's counter will initially start from value below.
        Also, if auto_reload is set, this value will be automatically reload on alarm */
-    timer_set_counter_value(TIMER_GROUP_0, timer_idx, 0x00000000ULL);
+    timer_set_counter_value(timer_group, timer_idx, 0x00000000ULL);
 
     /* Configure the alarm value and the interrupt on alarm. */
-    // timer_set_alarm_value(TIMER_GROUP_0, timer_idx, timer_interval_sec * TIMER_SCALE);
+    // timer_set_alarm_value(TIMER_GROUP_1, timer_idx, timer_interval_sec * TIMER_SCALE);
     
-    timer_start(TIMER_GROUP_0, timer_idx);
+    timer_start(timer_group, timer_idx);
 }
 
 
@@ -546,17 +571,6 @@ void app_main()
 {
     esp_err_t ret;
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-
-    // GPIO stuff ------> move this to module
-    gpio_config_t io_conf = {
-        //interrupt of rising edge
-        .intr_type = GPIO_PIN_INTR_POSEDGE,
-        .pin_bit_mask = (1ULL << GPIO_INPUT),
-        //set as input mode    
-        .mode = GPIO_MODE_INPUT,
-        //enable pull-up mode
-        .pull_up_en = 1
-    };
 
     // Initialize NVS
     ret = nvs_flash_init();
@@ -596,10 +610,6 @@ void app_main()
     esp_ble_gatts_register_callback(gatts_event_handler);
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_SPP_APP_ID);
-
-    gpio_config(&io_conf);    
-    gpio_install_isr_service(0);
-    gpio_isr_handler_add(GPIO_INPUT, gpio_isr_handler, (void*) GPIO_INPUT);
 
     gpio_queue = xQueueCreate(1, sizeof(uint32_t));
     xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
