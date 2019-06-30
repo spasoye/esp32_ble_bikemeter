@@ -19,6 +19,7 @@
 #include "driver/uart.h"
 #include "string.h"
 #include "driver/gpio.h"
+#include "driver/timer.h"
 
 #include "esp_bt.h"
 #include "esp_bt_defs.h"
@@ -64,6 +65,12 @@ static esp_ble_adv_params_t spp_adv_params = {
     .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
+// Timer
+#define TIMER_SCALE     (TIMER_BASE_CLK / timer_divider)
+static const uint32_t timer_divider = 16;
+static const timer_idx_t timer_idx = TIMER_0;
+
+// gpio
 static xQueueHandle gpio_queue = NULL;
 // For debouncing
 static uint32_t last_time;
@@ -510,6 +517,30 @@ static void spp_task_init(void)
     cmd_cmd_queue = xQueueCreate(10, sizeof(uint32_t));
     xTaskCreate(spp_cmd_task, "spp_cmd_task", 2048, NULL, 10, NULL);
 }
+
+// Timer
+void timer_func(void){
+    /* Select and initialize basic parameters of the timer */
+    timer_config_t config;
+    config.divider = timer_divider;
+    config.counter_dir = TIMER_COUNT_UP;
+    config.counter_en = TIMER_PAUSE;
+    config.alarm_en = TIMER_ALARM_EN;
+    config.intr_type = TIMER_INTR_LEVEL;
+    config.auto_reload = 0;
+    
+    timer_init(TIMER_GROUP_0, timer_idx, &config);
+
+    /* Timer's counter will initially start from value below.
+       Also, if auto_reload is set, this value will be automatically reload on alarm */
+    timer_set_counter_value(TIMER_GROUP_0, timer_idx, 0x00000000ULL);
+
+    /* Configure the alarm value and the interrupt on alarm. */
+    // timer_set_alarm_value(TIMER_GROUP_0, timer_idx, timer_interval_sec * TIMER_SCALE);
+    
+    timer_start(TIMER_GROUP_0, timer_idx);
+}
+
 
 void app_main()
 {
