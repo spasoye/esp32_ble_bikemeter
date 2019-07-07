@@ -505,15 +505,21 @@ static void gpio_task(void *arg){
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
-            uint64_t curr_cntr;
+            double speed;
+            double period;
             
             // TODO: timer_group to const.
             timer_get_counter_value(timer_group, timer_idx, &curr_cntr);
 
+            period = (double)(curr_cntr - tim_cntr) / TIMER_SCALE;
+            speed = ((double)2.298 / period) * 3.6;
 
             printf("Cntr: %" PRId64 "\n", curr_cntr);
-            snprintf(str_buffer, 15, "%.8f\n", (double)(curr_cntr - tim_cntr) / TIMER_SCALE);
-            printf("Period: %s\n", str_buffer);
+
+            snprintf(str_buffer, 15, "%.8f\n", period);
+            printf("Period: %s", str_buffer);
+            snprintf(str_buffer, 15, "%.8f\n", speed);
+            printf("Speed: %s\n", str_buffer);
 
             // TODO: t1 to const
             TIMERG0.int_clr_timers.t1 = 1;
