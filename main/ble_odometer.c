@@ -76,9 +76,10 @@ static const timer_group_t timer_group  = TIMER_GROUP_1;
 
 // gpio
 static xQueueHandle gpio_queue = NULL;
-// For debouncing
-static uint32_t last_time;
-static const uint16_t debounce_time = 3;
+// Debouncing,
+static double last_time;
+// Time in seconds.
+static const double debounce_time = 0.0002;
 static uint32_t delta;
 
 static const uint8_t spp_adv_data[23] = {
@@ -470,9 +471,11 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 }
 
 static void IRAM_ATTR gpio_isr_handler(void *arg){
-    uint32_t cur_time = esp_log_timestamp();
+    double cur_time;
+    timer_get_counter_time_sec(timer_group, timer_idx, &cur_time);
 
     if ((cur_time - last_time) > debounce_time){
+        // TODO: remove this shit.
         delta = cur_time - last_time;
         xQueueSendFromISR(gpio_queue, &delta, NULL);
     }
