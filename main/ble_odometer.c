@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -510,7 +511,7 @@ static void gpio_task(void *arg){
             timer_get_counter_value(timer_group, timer_idx, &curr_cntr);
 
 
-
+            printf("Cntr: %" PRId64 "\n", curr_cntr);
             snprintf(str_buffer, 15, "%.8f\n", (double)(curr_cntr - tim_cntr) / TIMER_SCALE);
             printf("Period: %s\n", str_buffer);
 
