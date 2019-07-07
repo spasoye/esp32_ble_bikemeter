@@ -485,7 +485,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 static void gpio_task(void *arg){
     uint32_t gpio_num;
-    static uint64_t tim_cntr = 0;
+    static double last_time = 0;
     char str_buffer[15] = {0};
 
     // GPIO stuff ------> move this to module
@@ -508,28 +508,28 @@ static void gpio_task(void *arg){
 
     for(;;){
         if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
+            double cur_time;
             double speed;
             double period;
-            
+
             // TODO: timer_group to const.
-            timer_get_counter_value(timer_group, timer_idx, &curr_cntr);
+            timer_get_counter_time_sec(timer_group, timer_idx, &cur_time);
 
-            period = (double)(curr_cntr - tim_cntr) / TIMER_SCALE;
+            period = cur_time - last_time;
+            // TODO: this goes out
             speed = ((double)2.298 / period) * 3.6;
-
-            printf("Cntr: %" PRId64 "\n", curr_cntr);
 
             snprintf(str_buffer, 15, "%.8f\n", period);
             printf("Period: %s", str_buffer);
             snprintf(str_buffer, 15, "%.8f\n", speed);
             printf("Speed: %s\n", str_buffer);
 
-            // TODO: t1 to const
+            // TODO: t1 to const. We dont need this ?
             TIMERG0.int_clr_timers.t1 = 1;
 
             esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen(str_buffer), (uint8_t*)str_buffer, false);
             
-            tim_cntr = curr_cntr;
+            last_time = cur_time;
         }
     }
 }
