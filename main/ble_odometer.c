@@ -46,7 +46,7 @@ static const uint16_t spp_service_uuid = 0xABF0;
 #define ESP_GATT_UUID_SPP_COMMAND_RECEIVE   0xABF3
 #define ESP_GATT_UUID_SPP_COMMAND_NOTIFY    0xABF4
 
-#define GPIO_INPUT  4
+#define GPIO_INPUT  16
 
 #define CHAR_DECLARATION_SIZE   (sizeof(uint8_t))
 /*********************************************************************************/
