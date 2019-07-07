@@ -78,7 +78,7 @@ static const timer_group_t timer_group  = TIMER_GROUP_1;
 static xQueueHandle gpio_queue = NULL;
 // For debouncing
 static uint32_t last_time;
-static const uint16_t debounce_time = 100;
+static const uint16_t debounce_time = 3;
 static uint32_t delta;
 
 static const uint8_t spp_adv_data[23] = {
