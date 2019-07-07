@@ -69,7 +69,7 @@ static esp_ble_adv_params_t spp_adv_params = {
 };
 
 // Timer
-static const uint32_t timer_divider = 16;
+static const uint32_t timer_divider = 8;
 #define TIMER_SCALE     (TIMER_BASE_CLK / timer_divider)
 static const timer_idx_t timer_idx = TIMER_0;
 static const timer_group_t timer_group  = TIMER_GROUP_1;
