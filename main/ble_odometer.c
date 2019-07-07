@@ -482,19 +482,19 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
 
 static void gpio_task(void *arg){
     uint32_t gpio_num;
-    uint8_t buffer[4];
     static uint64_t tim_cntr = 0;
     char str_buffer[15] = {0};
 
     // GPIO stuff ------> move this to module
     gpio_config_t io_conf = {
         //interrupt of rising edge
-        .intr_type = GPIO_PIN_INTR_NEGEDGE,
+        .intr_type = GPIO_PIN_INTR_POSEDGE,
         .pin_bit_mask = (1ULL << GPIO_INPUT),
         //set as input mode    
         .mode = GPIO_MODE_INPUT,
         //enable pull-up mode
-        .pull_up_en = 1
+        .pull_up_en = 0,
+        .pull_down_en = 0
     };
 
     gpio_config(&io_conf);    
