@@ -43,8 +43,7 @@ static const uint16_t spp_service_uuid = 0xABF0;
 /// Characteristic UUID
 #define ESP_GATT_UUID_SPP_DATA_RECEIVE      0xABF1
 #define ESP_GATT_UUID_SPP_DATA_NOTIFY       0xABF2
-#define ESP_GATT_UUID_SPP_COMMAND_RECEIVE   0xABF3
-#define ESP_GATT_UUID_SPP_COMMAND_NOTIFY    0xABF4
+
 
 #define GPIO_INPUT  16
 
@@ -161,14 +160,6 @@ static const uint16_t spp_data_notify_uuid = ESP_GATT_UUID_SPP_DATA_NOTIFY;
 static const uint8_t  spp_data_notify_val[20] = {0x00};
 static const uint8_t  spp_data_notify_ccc[2] = {0x00, 0x00};
 
-///SPP Service - command characteristic, read&write without response
-static const uint16_t spp_command_uuid = ESP_GATT_UUID_SPP_COMMAND_RECEIVE;
-static const uint8_t  spp_command_val[10] = {0x00};
-
-///SPP Service - status characteristic, notify&read
-static const uint16_t spp_status_uuid = ESP_GATT_UUID_SPP_COMMAND_NOTIFY;
-static const uint8_t  spp_status_val[10] = {0x00};
-static const uint8_t  spp_status_ccc[2] = {0x00, 0x00};
 
 ///Full HRS Database Description - Used to add attributes into the database
 static const esp_gatts_attr_db_t spp_gatt_db[SPP_IDX_NB] =
@@ -201,32 +192,7 @@ static const esp_gatts_attr_db_t spp_gatt_db[SPP_IDX_NB] =
     //SPP -  data notify characteristic - Client Characteristic Configuration Descriptor
     [SPP_IDX_SPP_DATA_NTF_CFG]         =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-    sizeof(uint16_t),sizeof(spp_data_notify_ccc), (uint8_t *)spp_data_notify_ccc}},
-
-    //SPP -  command characteristic Declaration
-    [SPP_IDX_SPP_COMMAND_CHAR]            =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-    CHAR_DECLARATION_SIZE,CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write}},
-
-    //SPP -  command characteristic Value
-    [SPP_IDX_SPP_COMMAND_VAL]                 =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_command_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-    SPP_CMD_MAX_LEN,sizeof(spp_command_val), (uint8_t *)spp_command_val}},
-
-    //SPP -  status characteristic Declaration
-    [SPP_IDX_SPP_STATUS_CHAR]            =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
-    CHAR_DECLARATION_SIZE,CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_notify}},
-
-    //SPP -  status characteristic Value
-    [SPP_IDX_SPP_STATUS_VAL]                 =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_status_uuid, ESP_GATT_PERM_READ,
-    SPP_STATUS_MAX_LEN,sizeof(spp_status_val), (uint8_t *)spp_status_val}},
-
-    //SPP -  status characteristic - Client Characteristic Configuration Descriptor
-    [SPP_IDX_SPP_STATUS_CFG]         =
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ|ESP_GATT_PERM_WRITE,
-    sizeof(uint16_t),sizeof(spp_status_ccc), (uint8_t *)spp_status_ccc}},
+    sizeof(uint16_t),sizeof(spp_data_notify_ccc), (uint8_t *)spp_data_notify_ccc}}
 };
 
 /*
