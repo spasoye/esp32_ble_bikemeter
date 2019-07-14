@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef BLE_BIKEMETER_H
+#define BLE_BIKEMETER_H
 /*
  * DEFINES
  ****************************************************************************************
@@ -23,6 +25,7 @@
 #define SPP_CMD_MAX_LEN            (20)
 #define SPP_STATUS_MAX_LEN         (20)
 #define SPP_DATA_BUFF_MAX_LEN      (2*1024)
+
 ///Attributes State Machine
 enum{
     SPP_IDX_SVC,
@@ -34,12 +37,7 @@ enum{
     SPP_IDX_SPP_DATA_NTY_VAL,
     SPP_IDX_SPP_DATA_NTF_CFG,
 
-    SPP_IDX_SPP_COMMAND_CHAR,
-    SPP_IDX_SPP_COMMAND_VAL,
-
-    SPP_IDX_SPP_STATUS_CHAR,
-    SPP_IDX_SPP_STATUS_VAL,
-    SPP_IDX_SPP_STATUS_CFG,
-
     SPP_IDX_NB,
 };
+
+#endif
