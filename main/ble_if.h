@@ -4,6 +4,7 @@
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
 #include "ble_odometer.h"
+#include <esp_gatt_defs.h>
 
 #ifndef BLE_IF_H
 #define BLE_IF_H
@@ -16,8 +17,10 @@
 #define SAMPLE_DEVICE_NAME          "BIKEMETER"
 #define SPP_SVC_INST_ID	            0
 /// Characteristic UUID
-#define ESP_GATT_UUID_SPP_DATA_RECEIVE      0xABF1
-#define ESP_GATT_UUID_SPP_DATA_NOTIFY       0xABF2
+// TODO
+#define ESP_GATT_UUID_SPP_DATA_RECEIVE      ESP_GATT_UUID_CSC_FEATURE
+// TODO
+#define ESP_GATT_UUID_SPP_DATA_NOTIFY       ESP_GATT_UUID_CSC_MEASUREMENT
 
 
 extern uint16_t spp_handle_table[SPP_IDX_NB];
@@ -25,7 +28,9 @@ extern uint16_t spp_conn_id;
 extern esp_gatt_if_t spp_gatts_if;
 
 /// SPP Service
-static const uint16_t spp_service_uuid = 0xABF0;
+// static const uint16_t spp_service_uuid = 0xABF0;
+static const uint16_t spp_service_uuid = ESP_GATT_UUID_CYCLING_SPEED_CADENCE_SVC;
+
 
 /*
  *  SPP PROFILE ATTRIBUTES
