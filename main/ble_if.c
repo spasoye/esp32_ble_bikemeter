@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include "esp_log.h"
 #include "ble_if.h"
@@ -22,12 +23,12 @@ static esp_ble_adv_params_t spp_adv_params = {
     .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
-static const uint8_t spp_adv_data[23] = {
+static char adv_name[] = "bikemeter";
+static uint8_t spp_adv_data[23] = {
     0x02,0x01,0x06,
     0x03,0x03,0xF0,0xAB,
     0x0F,0x09,0x42, 0x49, 0x4B, 0x45, 0x4D, 0x45, 0x54, 0x45, 0x52
 };
-
 
 uint16_t spp_conn_id = 0xffff;
 esp_gatt_if_t spp_gatts_if = 0xff;
@@ -233,6 +234,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     ESP_LOGI(GATTS_TABLE_TAG, "event = %x\n",event);
     switch (event) {
     	case ESP_GATTS_REG_EVT:
+            memcpy(&spp_adv_data[9], adv_name, strlen(adv_name));
+
     	    ESP_LOGI(GATTS_TABLE_TAG, "%s %d\n", __func__, __LINE__);
         	esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME);
 
