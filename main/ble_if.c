@@ -249,11 +249,21 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             res = find_char_and_desr_index(p_data->read.handle);
             // TODO
             printf("Evo me tu sam\n");
-            uint8_t p_buff[2];
-            p_buff[0] = 0x01;
-            p_buff[1] = 0x00;
-            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_RECV_VAL], 
-                                        2, p_buff, false);
+            uint8_t buff[2];
+            buff[0] = 0x01;
+            buff[1] = 0x00;
+            esp_gatt_rsp_t rsp;
+            memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+            rsp.attr_value.handle = param->read.handle;
+            rsp.attr_value.len = 2;
+            rsp.attr_value.value[0] = 0x01;
+            rsp.attr_value.value[1] = 0x00;
+            
+            // esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_RECV_VAL], 
+            //                             2, p_buff, false);
+            esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                                        ESP_GATT_OK, &rsp);
+
        	    break;
     	case ESP_GATTS_WRITE_EVT: {
     	    res = find_char_and_desr_index(p_data->write.handle);
