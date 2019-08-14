@@ -96,7 +96,7 @@ static const esp_gatts_attr_db_t spp_gatt_db[SPP_IDX_NB] =
 
     //SPP -  data receive characteristic Value
     [SPP_IDX_SPP_DATA_RECV_VAL]             	=
-    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_data_receive_uuid, ESP_GATT_PERM_READ,
+    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_data_receive_uuid, ESP_GATT_PERM_READ,
     SPP_DATA_MAX_LEN,sizeof(spp_data_receive_val), (uint8_t *)spp_data_receive_val}},
 
     //SPP -  data notify characteristic Declaration
@@ -248,21 +248,20 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
     	case ESP_GATTS_READ_EVT:
             res = find_char_and_desr_index(p_data->read.handle);
             // TODO
-            printf("Evo me tu sam\n");
-            uint8_t buff[2];
-            buff[0] = 0x01;
-            buff[1] = 0x00;
-            esp_gatt_rsp_t rsp;
-            memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
-            rsp.attr_value.handle = param->read.handle;
-            rsp.attr_value.len = 2;
-            rsp.attr_value.value[0] = 0x01;
-            rsp.attr_value.value[1] = 0x00;
-            
-            // esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_RECV_VAL], 
-            //                             2, p_buff, false);
-            esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
-                                        ESP_GATT_OK, &rsp);
+            if (res == SPP_IDX_SPP_DATA_RECV_VAL){    
+                printf("Evo me tu sam\n");
+                esp_gatt_rsp_t rsp;
+                memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
+                rsp.attr_value.handle = param->read.handle;
+                rsp.attr_value.len = 2;
+                rsp.attr_value.value[0] = 0x01;
+                rsp.attr_value.value[1] = 0x00;
+                
+                // esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_RECV_VAL], 
+                //                             2, p_buff, false);
+                esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id,
+                                            ESP_GATT_OK, &rsp);
+            }
 
        	    break;
     	case ESP_GATTS_WRITE_EVT: {
