@@ -46,7 +46,6 @@ static const uint8_t char_prop_read_write = ESP_GATT_CHAR_PROP_BIT_READ;
 
 ///SPP Service - data receive characteristic, read&write without response
 static const uint16_t spp_data_receive_uuid = ESP_GATT_UUID_SPP_DATA_RECEIVE;
-static const uint8_t  spp_data_receive_val[20] = {0x00};
 
 ///SPP Service - data notify characteristic, notify&read
 static const uint16_t spp_data_notify_uuid = ESP_GATT_UUID_SPP_DATA_NOTIFY;
