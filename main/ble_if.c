@@ -81,6 +81,9 @@ static struct gatts_profile_inst spp_profile_tab[SPP_PROFILE_NUM] = {
     },
 };
 
+// CSC Feature characteristics flags
+static const uint8_t flag_buff[2] = {0x01, 0x00};
+
 ///Full HRS Database Description - Used to add attributes into the database
 static const esp_gatts_attr_db_t spp_gatt_db[SPP_IDX_NB] =
 {
@@ -96,8 +99,8 @@ static const esp_gatts_attr_db_t spp_gatt_db[SPP_IDX_NB] =
 
     //SPP -  data receive characteristic Value
     [SPP_IDX_SPP_DATA_RECV_VAL]             	=
-    {{ESP_GATT_RSP_BY_APP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_data_receive_uuid, ESP_GATT_PERM_READ,
-    SPP_DATA_MAX_LEN,sizeof(spp_data_receive_val), (uint8_t *)spp_data_receive_val}},
+    {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&spp_data_receive_uuid, ESP_GATT_PERM_READ,
+    SPP_DATA_MAX_LEN, 2, (uint8_t *)flag_buff}},
 
     //SPP -  data notify characteristic Declaration
     [SPP_IDX_SPP_DATA_NOTIFY_CHAR]  =
