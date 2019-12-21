@@ -23,6 +23,13 @@ static esp_ble_adv_params_t spp_adv_params = {
     .adv_filter_policy  = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
 
+static esp_ble_adv_data_t adv_data = {
+    .appearance = ESP_BLE_APPEARANCE_CYCLING_SPEED_CADENCE,
+    .include_name = true,
+    .min_interval = 0x20,
+    .max_interval = 0x40,
+};
+
 static char adv_name[] = "bikemeter";
 static uint8_t spp_adv_data[23] = {
     0x02,0x01,0x06,
@@ -244,6 +251,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 
         	ESP_LOGI(GATTS_TABLE_TAG, "%s %d\n", __func__, __LINE__);
         	esp_ble_gap_config_adv_data_raw((uint8_t *)spp_adv_data, sizeof(spp_adv_data));
+            esp_ble_gap_config_adv_data(&adv_data);
 
         	ESP_LOGI(GATTS_TABLE_TAG, "%s %d\n", __func__, __LINE__);
         	esp_ble_gatts_create_attr_tab(spp_gatt_db, gatts_if, SPP_IDX_NB, SPP_SVC_INST_ID);
