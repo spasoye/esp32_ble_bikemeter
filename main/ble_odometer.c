@@ -42,8 +42,13 @@ static xQueueHandle gpio_queue = NULL;
 // Debouncing,
 static double last_time;
 // Time in seconds.
-static const double debounce_time = 0.5;
+static const double debounce_time = 0.05;
 static uint32_t delta;
+// CSC send data
+static csc_data send_data = {
+    .feature_flag = CSC_FEATURE_WHEEL_REV_DATA
+};
+
 
 static
 void
@@ -53,12 +58,9 @@ format(uint32_t revs, double time, uint8_t *dest_buff)
     
     uint16_t csc_time = time * 1024;
 
-    buff[0] = 0x01;
+    buff[0] = CSC_FEATURE_WHEEL_REV_DATA;
 
-    buff[1] = revs && 0xFF;
-    buff[2] = (revs >> 8) && 0xFF;
-    buff[3] = (revs >> 16) && 0xFF;
-    buff[4] = (revs >> 24) && 0xFF;
+    memcpy(&buff[1], &revs, 4);
 
     buff[5] = csc_time;
     buff[6] = csc_time >> 8;
@@ -87,15 +89,12 @@ static void IRAM_ATTR gpio_isr_handler(void *arg){
     last_time = cur_time;  
 }
 
-// struct _send_buf {
-//     wheel_
-// }
-
 static void gpio_task(void *arg){
     uint32_t gpio_num;
     static double last_time = 0;
     char str_buffer[15] = {0};
     uint8_t send_buff[7];
+    csc_data send_buff_struct;
 
     // GPIO stuff ------> move this to module
     gpio_config_t io_conf = {
@@ -117,7 +116,11 @@ static void gpio_task(void *arg){
 
     for(;;){
         if (xQueueReceive(gpio_queue, &send_buff, portMAX_DELAY)){
-            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], 7, send_buff, false);
+            // ESP_LOGI(GATTS_TABLE_TAG, "Format: flag - %d\n cummulative revol - %d\n last wheel event - %d",
+            // send_buff.feature_flag, send_buff.cum_wheel_rev, send_buff.last_wheel_event);
+
+            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], 7, (uint8_t*)send_buff, false);
+
         }
     }
 }
@@ -190,6 +193,6 @@ void app_main()
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_SPP_APP_ID);
 
-    gpio_queue = xQueueCreate(1, sizeof(uint32_t));
+    gpio_queue = xQueueCreate(1, 7);
     xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
 }
