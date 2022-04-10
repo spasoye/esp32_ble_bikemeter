@@ -10,7 +10,7 @@
 #define BLE_IF_H
 
 #define CHAR_DECLARATION_SIZE       (sizeof(uint8_t))
-#define GATTS_TABLE_TAG             "GATTS_SPP_DEMO"
+#define GATTS_TABLE_TAG             "CSC_DEMO"
 #define SPP_PROFILE_NUM             1
 #define SPP_PROFILE_APP_IDX         0
 #define ESP_SPP_APP_ID              0x69
@@ -28,7 +28,6 @@ extern uint16_t spp_conn_id;
 extern esp_gatt_if_t spp_gatts_if;
 
 /// SPP Service
-// static const uint16_t spp_service_uuid = 0xABF0;
 static const uint16_t spp_service_uuid = ESP_GATT_UUID_CYCLING_SPEED_CADENCE_SVC;
 
 

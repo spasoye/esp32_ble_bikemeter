@@ -24,10 +24,17 @@ static esp_ble_adv_params_t spp_adv_params = {
 };
 
 static esp_ble_adv_data_t adv_data = {
-    .appearance = ESP_BLE_APPEARANCE_CYCLING_SPEED_CADENCE,
+    .set_scan_rsp = false,
     .include_name = true,
-    .min_interval = 0x20,
-    .max_interval = 0x40,
+    .include_txpower = true,
+    .appearance = ESP_BLE_APPEARANCE_CYCLING_SPEED_CADENCE,
+    .min_interval = 0x0006, //slave connection min interval, Time = min_interval * 1.25 msec
+    .max_interval = 0x0010, //slave connection max interval, Time = max_interval * 1.25 msec
+    .manufacturer_len = 0,
+    .p_manufacturer_data =  NULL,
+    .service_data_len = 0,
+    .p_service_data = NULL,
+    .flag = (ESP_BLE_ADV_FLAG_GEN_DISC & ESP_BLE_ADV_FLAG_BREDR_NOT_SPT)
 };
 
 static char adv_name[] = "bikemeter";

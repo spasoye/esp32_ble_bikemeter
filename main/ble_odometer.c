@@ -42,32 +42,65 @@ static xQueueHandle gpio_queue = NULL;
 // Debouncing,
 static double last_time;
 // Time in seconds.
-static const double debounce_time = 0.0002;
+static const double debounce_time = 0.5;
 static uint32_t delta;
 
+static
+void
+format(uint32_t revs, double time, uint8_t *dest_buff)
+{
+    uint8_t buff[7];
+    
+    uint16_t csc_time = time * 1024;
+
+    buff[0] = 0x01;
+
+    buff[1] = revs && 0xFF;
+    buff[2] = (revs >> 8) && 0xFF;
+    buff[3] = (revs >> 16) && 0xFF;
+    buff[4] = (revs >> 24) && 0xFF;
+
+    buff[5] = csc_time;
+    buff[6] = csc_time >> 8;
+
+    memcpy(dest_buff, buff, 7);
+
+    return ;
+}
 
 static void IRAM_ATTR gpio_isr_handler(void *arg){
     double cur_time;
+    static uint32_t revs = 0;
+    uint8_t buff[7];
+
     timer_get_counter_time_sec(timer_group, timer_idx, &cur_time);
 
     if ((cur_time - last_time) > debounce_time){
+        revs++;
         // TODO: remove this shit.
         delta = cur_time - last_time;
-        xQueueSendFromISR(gpio_queue, &delta, NULL);
+        format(revs, cur_time, buff);
+
+        xQueueSendFromISR(gpio_queue, &buff, NULL);
     }
 
     last_time = cur_time;  
 }
 
+// struct _send_buf {
+//     wheel_
+// }
+
 static void gpio_task(void *arg){
     uint32_t gpio_num;
     static double last_time = 0;
     char str_buffer[15] = {0};
+    uint8_t send_buff[7];
 
     // GPIO stuff ------> move this to module
     gpio_config_t io_conf = {
         //interrupt of rising edge
-        .intr_type = GPIO_PIN_INTR_POSEDGE,
+        .intr_type = GPIO_INTR_POSEDGE,
         .pin_bit_mask = (1ULL << GPIO_INPUT),
         //set as input mode    
         .mode = GPIO_MODE_INPUT,
@@ -83,29 +116,8 @@ static void gpio_task(void *arg){
     timer_func();
 
     for(;;){
-        if (xQueueReceive(gpio_queue, &gpio_num, portMAX_DELAY)){
-            double cur_time;
-            double speed;
-            double period;
-
-            // TODO: timer_group to const.
-            timer_get_counter_time_sec(timer_group, timer_idx, &cur_time);
-
-            period = cur_time - last_time;
-            // TODO: this goes out
-            speed = ((double)2.298 / period) * 3.6;
-
-            snprintf(str_buffer, 15, "%.8f\n", period);
-            printf("Period: %s", str_buffer);
-            snprintf(str_buffer, 15, "%.8f\n", speed);
-            printf("Speed: %s\n", str_buffer);
-
-            // TODO: t1 to const. We dont need this ?
-            TIMERG0.int_clr_timers.t1 = 1;
-
-            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen(str_buffer), (uint8_t*)str_buffer, false);
-            
-            last_time = cur_time;
+        if (xQueueReceive(gpio_queue, &send_buff, portMAX_DELAY)){
+            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], 7, send_buff, false);
         }
     }
 }
