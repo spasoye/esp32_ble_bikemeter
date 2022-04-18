@@ -1,4 +1,2 @@
-set(COMPONENT_SRCS "ble_odometer.c" "ble_if.c")
-set(COMPONENT_ADD_INCLUDEDIRS ".")
-
-register_component()
+idf_component_register(SRCS "main.c" "gatt_svr.c"
+                    INCLUDE_DIRS ".")
