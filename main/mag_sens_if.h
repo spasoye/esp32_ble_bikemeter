@@ -54,5 +54,5 @@ typedef struct t_csc_data
     uint16_t last_wheel_event;
 }csc_data;
 
-
+void mag_sens_init();
 #endif

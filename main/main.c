@@ -1,21 +1,27 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
+*  COPYRIGHT NOTICE:
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*  http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+* KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*
+*
+*  Created on: Apr 18, 2022
+*  Author: Ivan Spasic
+*
+*/
 
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -28,8 +34,18 @@
 #include "host/util/util.h"
 #include "console/console.h"
 #include "services/gap/ble_svc_gap.h"
-#include "ble_csc_sens.h""
+#include "ble_csc_sens.h"
+#include "mag_sens_if.h"
+#include "main.h"
 
+
+/* ------> MACROS <------ */
+
+/* ------> DATA TYPES <------ */
+
+/* ------> PRIVATE FUNCTIONS PROTOTYPES <------ */
+
+/* ------> STATIC DATA <------ */
 static const char *tag = "CSC bike meter";
 
 static TimerHandle_t blehr_tx_timer;
@@ -47,28 +63,9 @@ static uint8_t blehr_addr_type;
 /* Variable to simulate heart beats */
 static uint8_t heartrate = 90;
 
-/**
- * Utility function to log an array of bytes.
- */
-void
-print_bytes(const uint8_t *bytes, int len)
-{
-    int i;
-    for (i = 0; i < len; i++) {
-        MODLOG_DFLT(INFO, "%s0x%02x", i != 0 ? ":" : "", bytes[i]);
-    }
-}
+/* ------> GLOBAL DATA <------ */
 
-void
-print_addr(const void *addr)
-{
-    const uint8_t *u8p;
-
-    u8p = addr;
-    MODLOG_DFLT(INFO, "%02x:%02x:%02x:%02x:%02x:%02x",
-                u8p[5], u8p[4], u8p[3], u8p[2], u8p[1], u8p[0]);
-}
-
+/* ------> PRIVATE FUNCTIONS <------ */
 static void
 format(uint32_t revs, double time, uint8_t *dest_buff)
 {
@@ -149,6 +146,7 @@ blehr_advertise(void)
 static void
 blehr_tx_hrate_stop(void)
 {
+    return;
     xTimerStop( blehr_tx_timer, 1000 / portTICK_PERIOD_MS );
 }
 
@@ -156,6 +154,7 @@ blehr_tx_hrate_stop(void)
 static void
 blehr_tx_hrate_reset(void)
 {
+    return;
     int rc;
 
     if (xTimerReset(blehr_tx_timer, 1000 / portTICK_PERIOD_MS ) == pdPASS) {
@@ -166,36 +165,6 @@ blehr_tx_hrate_reset(void)
 
     assert(rc == 0);
 
-}
-
-/* This function simulates heart beat and notifies it to the client */
-static void
-blehr_tx_hrate(TimerHandle_t ev)
-{
-    static uint8_t hrm[7];
-    int rc;
-    struct os_mbuf *om;
-
-    if (!notify_state) {
-        blehr_tx_hrate_stop();
-        heartrate = 90;
-        return;
-    }
-
-    format(69, 1234567, hrm);
-
-    /* Simulation of heart beats */
-    heartrate++;
-    if (heartrate == 160) {
-        heartrate = 90;
-    }
-
-    om = ble_hs_mbuf_from_flat(hrm, sizeof(hrm));
-    rc = ble_gattc_notify_custom(conn_handle, hrs_hrm_handle, om);
-
-    assert(rc == 0);
-
-    blehr_tx_hrate_reset();
 }
 
 static int
@@ -306,7 +275,7 @@ void app_main(void)
     ble_hs_cfg.reset_cb = blehr_on_reset;
 
     /* name, period/time,  auto reload, timer ID, callback */
-    blehr_tx_timer = xTimerCreate("blehr_tx_timer", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, blehr_tx_hrate);
+    // blehr_tx_timer = xTimerCreate("blehr_tx_timer", pdMS_TO_TICKS(1000), pdTRUE, (void *)0, blehr_tx_hrate);
 
     rc = gatt_svr_init();
     assert(rc == 0);
@@ -315,7 +284,60 @@ void app_main(void)
     rc = ble_svc_gap_device_name_set(device_name);
     assert(rc == 0);
 
+    mag_sens_init();
     /* Start the task */
     nimble_port_freertos_init(blehr_host_task);
-
 }
+
+/* ------> PUBLIC FUNCTIONS <------ */
+/**
+ * Utility function to log an array of bytes.
+ */
+void
+print_bytes(const uint8_t *bytes, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        MODLOG_DFLT(INFO, "%s0x%02x", i != 0 ? ":" : "", bytes[i]);
+    }
+}
+
+void
+print_addr(const void *addr)
+{
+    const uint8_t *u8p;
+
+    u8p = addr;
+    MODLOG_DFLT(INFO, "%02x:%02x:%02x:%02x:%02x:%02x",
+                u8p[5], u8p[4], u8p[3], u8p[2], u8p[1], u8p[0]);
+}
+
+void
+blehr_tx_hrate(uint8_t * buff, uint8_t buff_size)
+{
+    static uint8_t hrm[7];
+    int rc;
+    struct os_mbuf *om;
+
+    if (!notify_state) {
+        // blehr_tx_hrate_stop();
+        heartrate = 90;
+        return;
+    }
+
+    format(69, 1234567, hrm);
+
+    heartrate++;
+    if (heartrate == 160) {
+        heartrate = 90;
+    }
+
+    om = ble_hs_mbuf_from_flat(buff, buff_size);
+    rc = ble_gattc_notify_custom(conn_handle, hrs_hrm_handle, om);
+
+    assert(rc == 0);
+
+    blehr_tx_hrate_reset();
+}
+
+/* ------> INTERRUPT HANDLERS <------ */

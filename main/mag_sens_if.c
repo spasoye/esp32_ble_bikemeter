@@ -22,8 +22,8 @@
 #include "driver/gpio.h"
 #include "driver/timer.h"
 
-#include "ble_if.h"
-#include "ble_odometer.h"
+#include "mag_sens_if.h"
+#include "main.h"
 
 #define GPIO_INPUT  16
 /*********************************************************************************/
@@ -118,9 +118,10 @@ static void gpio_task(void *arg){
         if (xQueueReceive(gpio_queue, &send_buff, portMAX_DELAY)){
             // ESP_LOGI(GATTS_TABLE_TAG, "Format: flag - %d\n cummulative revol - %d\n last wheel event - %d",
             // send_buff.feature_flag, send_buff.cum_wheel_rev, send_buff.last_wheel_event);
+            ESP_LOGI("CSC_DEMO", "GPIO mofo");
+            // esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], 7, (uint8_t*)send_buff, false);
 
-            esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], 7, (uint8_t*)send_buff, false);
-
+            blehr_tx_hrate(send_buff, 7);
         }
     }
 }
@@ -149,8 +150,10 @@ void timer_func(void){
 }
 
 
-void app_main()
+void 
+mag_sens_init()
 {
+    /*
     esp_err_t ret;
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 
@@ -193,6 +196,7 @@ void app_main()
     esp_ble_gap_register_callback(gap_event_handler);
     esp_ble_gatts_app_register(ESP_SPP_APP_ID);
 
+*/
     gpio_queue = xQueueCreate(1, 7);
     xTaskCreate(gpio_task, "gpio_task", 2048, NULL, 10, NULL);
 }
